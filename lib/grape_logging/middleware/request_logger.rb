@@ -8,6 +8,7 @@ module GrapeLogging
       def initialize(app, options = {})
         @app = app
         @logger = options[:logger] || Logger.new(STDOUT)
+        @obfuscated_params = options[:obfuscated_params] || []
 
         subscribe_to_active_record if defined? ActiveRecord
       end
@@ -44,7 +45,7 @@ module GrapeLogging
       def log(request, response, total_runtime)
         @logger.info(
           path: request.path,
-          params: request.params.to_hash,
+          params: obfuscate_parameters(request.params),
           method: request.request_method,
           total: format_runtime(total_runtime),
           db: format_runtime(db_runtime),
@@ -75,7 +76,18 @@ module GrapeLogging
       def db_runtime
         Thread.current[:db_runtime]
       end
-    end
 
+      def obfuscate_parameters(request_parameters)
+        filtered_parameters = request_parameters.clone.to_hash
+        sensitive_parameters.each do |param|
+          filtered_parameters[param.to_s] = '***'
+        end
+        filtered_parameters
+      end
+
+      def sensitive_parameters
+        @obfuscated_params
+      end
+    end
   end
 end

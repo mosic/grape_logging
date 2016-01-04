@@ -9,6 +9,7 @@ module GrapeLogging
         @app = app
         @logger = options[:logger] || Logger.new(STDOUT)
         @obfuscated_params = options[:obfuscated_params] || []
+        @ignored_methods = options[:ignored_methods] || []
 
         subscribe_to_active_record if defined? ActiveRecord
       end
@@ -26,7 +27,9 @@ module GrapeLogging
 
         total_runtime = calculate_runtime(start_time, stop_time)
 
-        log(request, response, total_runtime)
+        unless @ignored_methods.include? request.request_method
+          log(request, response, total_runtime)
+        end
 
         clear_db_runtime
 
